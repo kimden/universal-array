@@ -265,10 +265,10 @@ template<typename T, template<typename U> class N>
 Node<T>* UniversalArray<T, N>::find(int pos) {
     Node<T>* node = root;
     while(1){
-        node->push();
         if(node == nullptr) {
             throw std::invalid_argument("In UniversalArray::find(): pos out of range");
         }
+        node->push();
         int leftSize = getSize(node->l);
         if(pos == leftSize){
             return node;
