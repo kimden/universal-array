@@ -97,12 +97,6 @@ Node<T>** getPtr(Node<T>* parent, Node<T>* son){
 
 template<typename T>
 void Node<T>::push(){
-    if(l != nullptr){
-        l->push();
-    }
-    if(r != nullptr){
-        r->push();
-    }
     if(rev){
         Node<T>* new_l = nullptr;
         Node<T>* new_r = nullptr;
@@ -111,14 +105,14 @@ void Node<T>::push(){
             new_l->l = l->l;
             new_l->r = l->r;
             new_l->update();
-            new_l->rev = true;
+            new_l->rev = !(l->rev);
         }
         if(r != nullptr){
             new_r = new Node<T>(r->val);
             new_r->l = r->l;
             new_r->r = r->r;
             new_r->update();
-            new_r->rev = true;
+            new_r->rev = !(r->rev);
         }
         std::swap(new_l, new_r);
         l = new_l;
@@ -140,6 +134,7 @@ public:
     virtual void update();
     virtual void push();
     virtual ~SumMinMaxNode() {}
+    void applyOperation(int op, int param);
 };
 
 template<typename T>
@@ -169,81 +164,96 @@ void SumMinMaxNode<T>::update() {
 
 template<typename T>
 void SumMinMaxNode<T>::push(){
-    if(this->l != nullptr && (((SumMinMaxNode<T>*)this->l)->operationType != -1 || this->l->rev)){
-        this->l->push();
+    if(operationType == -1 && !(this->rev)){
+        return;
     }
-    if(this->r != nullptr && (((SumMinMaxNode<T>*)this->r)->operationType != -1 || this->r->rev)){
-        this->r->push();
-    }
-    if(operationType != -1){
-        if(operationType == 0){
-            auto ptr = ((SumMinMaxNode<T>*)this->l);
-            if(ptr != nullptr){
-                ptr->val += pushVal;
-                ptr->operationType = 0;
-                ptr->pushVal = pushVal;
-                ptr->sum += ptr->size * pushVal;
-                ptr->min += pushVal;
-                ptr->max += pushVal;
-            }
-            ptr = ((SumMinMaxNode<T>*)this->r);
-            if(ptr != nullptr){
-                ptr->val += pushVal;
-                ptr->operationType = 0;
-                ptr->pushVal = pushVal;
-                ptr->sum += ptr->size * pushVal;
-                ptr->min += pushVal;
-                ptr->max += pushVal;
-            }
-        }else{
-            auto ptr = ((SumMinMaxNode<T>*)this->l);
-            if(ptr != nullptr){
-                ptr->val = pushVal;
-                ptr->operationType = 1;
-                ptr->pushVal = pushVal;
-                ptr->sum = ptr->size * pushVal;
-                ptr->min = pushVal;
-                ptr->max = pushVal;
-            }
-            ptr = ((SumMinMaxNode<T>*)this->r);
-            if(ptr != nullptr){
-                ptr->val = pushVal;
-                ptr->operationType = 1;
-                ptr->pushVal = pushVal;
-                ptr->sum = ptr->size * pushVal;
-                ptr->min = pushVal;
-                ptr->max = pushVal;
-            }
+    SumMinMaxNode<T>* ptrl = (SumMinMaxNode<T>*)this->l;
+    SumMinMaxNode<T>* ptrr = (SumMinMaxNode<T>*)this->r;
+    SumMinMaxNode<T>* new_l = nullptr;
+    SumMinMaxNode<T>* new_r = nullptr;
+    if(ptrl != nullptr){
+        new_l = new SumMinMaxNode<T>(ptrl->val);
+        *new_l = *ptrl;
+        if(this->rev){
+            new_l->rev ^= 1;
         }
-        operationType = -1;
-        update();
+        if(operationType == 0){
+            new_l->val += pushVal;
+            if(new_l->operationType != -1){
+                new_l->pushVal += pushVal;
+            }else{
+                new_l->operationType = 0;
+                new_l->pushVal = pushVal;
+            }
+            new_l->sum += new_l->size * pushVal;
+            new_l->min += pushVal;
+            new_l->max += pushVal;
+        }else if(operationType == 1){
+            new_l->val = pushVal;
+            new_l->operationType = 1;
+            new_l->pushVal = pushVal;
+            new_l->sum = new_l->size * pushVal;
+            new_l->min = pushVal;
+            new_l->max = pushVal;
+        }
+    }
+    if(ptrr != nullptr){
+        new_r = new SumMinMaxNode<T>(ptrr->val);
+        *new_r = *ptrr;
+        if(this->rev){
+            new_r->rev ^= 1;
+        }
+        if(operationType == 0){
+            new_r->val += pushVal;
+            if(new_r->operationType != -1){
+                new_r->pushVal += pushVal;
+            }else{
+                new_r->operationType = 0;
+                new_r->pushVal = pushVal;
+            }
+            new_r->sum += new_r->size * pushVal;
+            new_r->min += pushVal;
+            new_r->max += pushVal;
+        }else if(operationType == 1){
+            new_r->val = pushVal;
+            new_r->operationType = 1;
+            new_r->pushVal = pushVal;
+            new_r->sum = new_r->size * pushVal;
+            new_r->min = pushVal;
+            new_r->max = pushVal;
+        }
     }
     if(this->rev){
-        Node<T>* new_l = nullptr;
-        Node<T>* new_r = nullptr;
-        if(this->l != nullptr){
-            new_l = new SumMinMaxNode<T>(this->l->val);
-            new_l->l = this->l->l;
-            new_l->r = this->l->r;
-            new_l->update();
-            new_l->rev = true;
-        }
-        if(this->r != nullptr){
-            new_r = new SumMinMaxNode<T>(this->r->val);
-            new_r->l = this->r->l;
-            new_r->r = this->r->r;
-            new_r->update();
-            new_r->rev = true;
-        }
         std::swap(new_l, new_r);
-        this->l = new_l;
-        this->r = new_r;
         this->rev = false;
-        update();
     }
+    this->l = new_l;
+    this->r = new_r;
+    operationType = -1;
+    this->update();
 }
 
-
+template<typename T>
+void SumMinMaxNode<T>::applyOperation(int op, int param){
+    switch(op){
+    case 0:
+        this->val += param;
+        operationType = 0;
+        pushVal = param;
+        sum += this->size * param;
+        min += param;
+        max += param;
+        break;
+    case 1:
+        this->val = param;
+        operationType = 1;
+        pushVal = param;
+        sum = this->size * param;
+        min = param;
+        max = param;
+        break;
+    }
+}
 
 template<typename T, template<typename U> class N = Node>
 class PUA {
@@ -881,13 +891,7 @@ int main() {
             auto p = a.split(x);
             auto q = p.second.split(y + 1 - x);
             q.first.createNewRoot();
-            auto ptr = ((SumMinMaxNode<int>*)q.first.root);
-            ptr->val = z;
-            ptr->operationType = 1;
-            ptr->pushVal = z;
-            ptr->sum = ptr->size * ptr->pushVal;
-            ptr->min = ptr->pushVal;
-            ptr->max = ptr->pushVal;
+            ((SumMinMaxNode<int>*)q.first.root)->applyOperation(1, z);
             a = p.first.merge(q.first);
             a = a.merge(q.second);
         }else if(t == "+"){
@@ -895,13 +899,7 @@ int main() {
             auto p = a.split(x);
             auto q = p.second.split(y + 1 - x);
             q.first.createNewRoot();
-            auto ptr = ((SumMinMaxNode<int>*)q.first.root);
-            ptr->val += z;
-            ptr->operationType = 0;
-            ptr->pushVal = z;
-            ptr->sum += ptr->size * ptr->pushVal;
-            ptr->min += ptr->pushVal;
-            ptr->max += ptr->pushVal;
+            ((SumMinMaxNode<int>*)q.first.root)->applyOperation(0, z);
             a = p.first.merge(q.first);
             a = a.merge(q.second);
         }else if(t == "?"){
@@ -931,4 +929,5 @@ int main() {
             a = p.first.merge(p.second);
         }
     }
+
 }
