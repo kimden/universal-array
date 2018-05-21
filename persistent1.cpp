@@ -9,6 +9,8 @@ public:
     Node* r = nullptr;
     Node* realL = nullptr;
     Node* realR = nullptr;
+    Node* prevRoot1 = nullptr;
+    Node* prevRoot2 = nullptr;
     bool hasRealL = false;
     bool hasRealR = false;
     bool hasRealVal = false;
@@ -560,7 +562,11 @@ void PUA<T, N>::balance(Node<T>* node, Node<T>* parent) {
 
 template<typename T, template<typename U> class N>
 void PUA<T, N>::remove(int pos) {
-    return remove(root, nullptr, pos);
+    Node<T>* prevRoot = root;
+    remove(root, nullptr, pos);
+    if(root != nullptr){
+        root->prevRoot1 = prevRoot;
+    }
 }
 
 template<typename T, template<typename U> class N>
@@ -645,12 +651,16 @@ void PUA<T, N>::insert(int pos, T val) {
     if(pos < 0 || pos >= getSize(root) + 1){
         throw std::invalid_argument("In PUA::insert(): pos out of range");
     }
+    Node<T>* prevRoot = root;
     Node<T>* ans;
     if(root == nullptr){
         root = ans = new N<T>(val);
         roots.push_back(root);
     }else{
         insert(root, nullptr, pos, val);
+    }
+    if(root != nullptr){
+        root->prevRoot1 = prevRoot;
     }
 }
 
@@ -788,6 +798,8 @@ PUA<T, N> PUA<T, N>::merge2(PUA<T, N> rhs, T t){
 
 template<typename T, template<typename U> class N>
 PUA<T, N> PUA<T, N>::merge(PUA<T, N> rhs){
+    Node<T>* prevRoot1 = root;
+    Node<T>* prevRoot2 = rhs.root;
     if(rhs.size() == 0){
         return *this;
     }
@@ -804,12 +816,25 @@ PUA<T, N> PUA<T, N>::merge(PUA<T, N> rhs){
         t = find(size() - 1).first->val;
         remove(size() - 1);
     }
-    return merge2(rhs, t);
+    auto res = merge2(rhs, t);
+    if(res.root != nullptr){
+        res.root->prevRoot1 = prevRoot1;
+        res.root->prevRoot2 = prevRoot2;
+    }
+    return res;
 }
 
 template<typename T, template<typename U> class N>
 std::pair<PUA<T, N>, PUA<T, N>> PUA<T, N>::split(int pos) {
-    return split(root, nullptr, pos);
+    Node<T>* prevRoot = root;
+    auto pr = split(root, nullptr, pos);
+    if(pr.first.root != nullptr){
+        pr.first.root->prevRoot1 = prevRoot;
+    }
+    if(pr.second.root != nullptr){
+        pr.second.root->prevRoot1 = prevRoot;
+    }
+    return pr;
 }
 
 template<typename T, template<typename U> class N>
@@ -871,8 +896,10 @@ void PUA<T, N>::reverse(){
     if(root == nullptr){
         return;
     }
+    Node<T>* prevRoot = root;
     createNewRoot();
     root->rev = true;
+    root->prevRoot1 = prevRoot;
 }
 
 int main() {
@@ -881,7 +908,11 @@ int main() {
     int x, y, z;
     std::string t;
     int i = 0;
+    std::vector<SumMinMaxNode<int>*> versions;
+    versions.push_back((SumMinMaxNode<int>*)a.root);
     for(; 1; ++i){
+        std::cerr << i << ">> ";
+        std::cerr.flush();
         std::cin >> t;
         if(t == "exit"){
             return 0;
@@ -927,7 +958,15 @@ int main() {
             q.second.reverse();
             p.first = q.first.merge(q.second);
             a = p.first.merge(p.second);
+        }else if(t == "c"){
+            std::cin >> x;
+            if(x < -1 || x >= i){
+                std::cout << "Invalid version" << std::endl;
+            }else{
+                a = PUA<int, SumMinMaxNode>(versions[x + 1]);
+            }
         }
+        versions.push_back((SumMinMaxNode<int>*)a.root);
     }
 
 }
