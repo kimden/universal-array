@@ -309,9 +309,6 @@ void UniversalArray<T, N>::rotateSL(Node<T>* n, Node<T>* parent) {
     }
     n->r = son->l;
     son->l = n;
-    if(n->r != nullptr){
-        n->r->update();
-    }
     if(isRoot){
         root = son;
     }
@@ -336,9 +333,6 @@ void UniversalArray<T, N>::rotateSR(Node<T>* n, Node<T>* parent) {
     }
     n->l = son->r;
     son->r = n;
-    if(n->l != nullptr){
-        n->l->update();
-    }
     if(isRoot){
         root = son;
     }
